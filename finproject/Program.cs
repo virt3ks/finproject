@@ -1,7 +1,8 @@
 ﻿using finproject.DAL;
 using System;
-using Dapper;
-using System.Data.SqlClient;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace finproject
 {
@@ -23,10 +24,12 @@ namespace finproject
                 Console.WriteLine("4 — Employees");
                 Console.WriteLine("5 — Orders");
                 Console.WriteLine("6 — Exit");
-                Console.WriteLine("7 — Favorite Movies");
+                Console.WriteLine("7 — Thread");
+                Console.WriteLine("8 — New process");
+                Console.WriteLine("9 — Task");
 
                 Console.Write("Choose: ");
-                var choice = Console.ReadLine();
+                string choice = Console.ReadLine();
 
                 switch (choice)
                 {
@@ -35,64 +38,73 @@ namespace finproject
                     case "3": CustomerMenu(); break;
                     case "4": EmployeeMenu(); break;
                     case "5": OrderMenu(); break;
+                    case "7": MultiThreadReport(); break;
+                    case "8": RunNewProcess(); break;
+                    case "9": TaskReport(); break;
                     case "6": return;
-                    case "7": FavoriteMovies(); break;
-
-
-                    default: Console.WriteLine("Invalid choice!"); break;
                 }
             }
         }
-        static void FavoriteMovies()
+        static void MultiThreadReport()
         {
-            var repo = new FavoriteMovieRepository();
+            Console.WriteLine("\n--- thread ---");
 
-            while (true)
-            {
-                Console.WriteLine("\n--- FAVORITE MOVIES ---");
-                Console.WriteLine("1 — Add 3 movies");
-                Console.WriteLine("2 — Show all movies");
-                Console.WriteLine("3 — Delete all movies");
-                Console.WriteLine("4 — Back");
+            var catRepo = new CategoryRepository();
+            var custRepo = new CustomerRepository();
+            var empRepo = new EmployeeRepository();
 
-                Console.Write("Choose: ");
-                string choice = Console.ReadLine();
+            Thread t1 = new Thread(() =>
+                Console.WriteLine($"Categories: {catRepo.GetAll().Count}")
+            );
 
-                if (choice == "1")
-                {
-                    FavoriteMovie movie1 = new FavoriteMovie();
-                    movie1.Title = "Побег из Шоушенка";
+            Thread t2 = new Thread(() =>
+                Console.WriteLine($"Customers: {custRepo.GetAll().Count}")
+            );
 
-                    FavoriteMovie movie2 = new FavoriteMovie();
-                    movie2.Title = "Интерстеллар";
+            Thread t3 = new Thread(() =>
+                Console.WriteLine($"Employees: {empRepo.GetAll().Count}")
+            );
 
-                    FavoriteMovie movie3 = new FavoriteMovie();
-                    movie3.Title = "Дедпул";
+            t1.Start();
+            t2.Start();
+            t3.Start();
 
-                    repo.Add(movie1);
-                    repo.Add(movie2);
-                    repo.Add(movie3);
-
-                    Console.WriteLine("3 movies added!");
-                }
-                else if (choice == "2")
-                {
-                    Console.WriteLine("\n--- MOVIES ---");
-                    foreach (FavoriteMovie m in repo.GetAll())
-                        Console.WriteLine(m.Id + ". " + m.Title);
-                }
-                else if (choice == "3")
-                {
-                    repo.DeleteAll();
-                    Console.WriteLine("All movies deleted");
-                }
-                else if (choice == "4")
-                    return;
-                else
-                    Console.WriteLine("Invalid choice");
-            }
+            t1.Join();
+            t2.Join();
+            t3.Join();
         }
 
+        static void TaskReport()
+        {
+            Console.WriteLine("\n--- tasku ---");
+
+            var catRepo = new CategoryRepository();
+            var custRepo = new CustomerRepository();
+            var empRepo = new EmployeeRepository();
+
+            var task1 = Task.Run(() => catRepo.GetAll().Count);
+            var task2 = Task.Run(() => custRepo.GetAll().Count);
+            var task3 = Task.Run(() => empRepo.GetAll().Count);
+
+            Task.WaitAll(task1, task2, task3);
+
+            Console.WriteLine($"Categories: {task1.Result}");
+            Console.WriteLine($"Customers: {task2.Result}");
+            Console.WriteLine($"Employees: {task3.Result}");
+        }
+
+        static void RunNewProcess()
+        {
+            string exePath = Environment.ProcessPath;
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = exePath,
+                UseShellExecute = true
+            });
+
+            Console.WriteLine("Program started in new process!");
+        }
 
         static void CategoryMenu()
         {
@@ -157,6 +169,7 @@ namespace finproject
                         Console.WriteLine($"{c.Id}. {c.Name} — {c.Taste}");
                 }
                 else if (choice == "5") return;
+                else Console.WriteLine("Invalid choice");
             }
         }
 
@@ -238,9 +251,9 @@ namespace finproject
                         Console.WriteLine($"{i.Id}. {i.Name} — {i.Price}₴ (CatId={i.CategoryId})");
                 }
                 else if (choice == "5") return;
+                else Console.WriteLine("Invalid choice");
             }
         }
-
 
         static void CustomerMenu()
         {
@@ -305,6 +318,7 @@ namespace finproject
                         Console.WriteLine($"{c.Id}. {c.Name} — Phone: {c.Phone}");
                 }
                 else if (choice == "5") return;
+                else Console.WriteLine("Invalid choice");
             }
         }
 
@@ -372,8 +386,10 @@ namespace finproject
                         Console.WriteLine($"{e.Id}. {e.Name} — Salary: {e.Salary}₴");
                 }
                 else if (choice == "5") return;
+                else Console.WriteLine("Invalid choice");
             }
         }
+
         static void OrderMenu()
         {
             var repo = new OrderRepository();
@@ -477,6 +493,7 @@ namespace finproject
                             $"Order {o.Id}: Cust {o.CustomerId}, Item {o.MenuItemId}, Emp {o.EmployeeId}, Pay={o.PaymentMethod}, Total={o.TotalPrice}₴");
                 }
                 else if (choice == "5") return;
+                else Console.WriteLine("Invalid choice");
             }
         }
     }
